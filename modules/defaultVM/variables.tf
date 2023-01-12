@@ -10,5 +10,4 @@ variable "resource_group_name" {
 
 variable "subnet_id" {
     description = "Subnet to connect VM to"
-    type = azurerm_subnet
 }
