@@ -1,4 +1,5 @@
 resource "azurerm_public_ip" "tf_pip" {
+  count               = var.public_ip ? 1 : 0
   name                = "pip-${var.name}"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -32,7 +33,7 @@ resource "azurerm_network_interface" "tf_nic" {
     name                          = "${var.name}-nic-configuration"
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.tf_pip.id
+    public_ip_address_id          = var.public_ip ? azurerm_public_ip.tf_pip[0].id : null
   }
 }
 

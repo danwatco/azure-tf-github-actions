@@ -11,6 +11,7 @@ resource "azurerm_public_ip" "pip-firewall" {
   resource_group_name = local.hub-resource-group
   sku                 = "Standard"
 
+  depends_on = [azurerm_resource_group.hub-rg]
 }
 
 resource "azurerm_firewall" "hub-firewall" {
@@ -26,6 +27,8 @@ resource "azurerm_firewall" "hub-firewall" {
     public_ip_address_id = azurerm_public_ip.pip-firewall.id
   }
 
+  depends_on = [azurerm_resource_group.hub-rg]
+
 }
 
 resource "azurerm_firewall_policy" "hub-fw-policy" {
@@ -34,27 +37,67 @@ resource "azurerm_firewall_policy" "hub-fw-policy" {
   resource_group_name = local.hub-resource-group
 }
 
-# resource "azurerm_firewall_policy_rule_collection_group" "hub-fw-collection" {
-#   firewall_policy_id = azurerm_firewall_policy.hub-fw-policy.id
-#   name               = "hub-fw-collection"
-#   priority           = 100
+resource "azurerm_firewall_policy_rule_collection_group" "hub-fw-collection" {
+  firewall_policy_id = azurerm_firewall_policy.hub-fw-policy.id
+  name               = "hub-fw-collection"
+  priority           = 100
 
-#   application_rule_collection {
-#     name     = "app-coll-01"
-#     priority = 500
-#     action   = "Allow"
-#     rule {
-#       name = "Allow-Google"
-#       protocols {
-#         type = "Http"
-#         port = 80
-#       }
-#       protocols {
-#         type = "Https"
-#         port = 443
-#       }
-#       source_addresses  = ["10.1.0.0/16"]
-#       destination_fqdns = ["www.google.com"]
-#     }
-#   }
-# }
+  application_rule_collection {
+    name     = "app-coll-01"
+    priority = 200
+    action   = "Allow"
+    rule {
+      name = "Allow-Google"
+      protocols {
+        type = "Http"
+        port = 80
+      }
+      protocols {
+        type = "Https"
+        port = 443
+      }
+      source_addresses  = ["*"]
+      destination_fqdns = ["*.google.com"]
+    }
+    rule {
+      name = "Allow-Internet"
+      protocols {
+        type = "Http"
+        port = 80
+      }
+      protocols {
+        type = "Https"
+        port = 443
+      }
+      source_addresses = ["10.2.1.0/24"]
+      destination_fqdns = ["*"] 
+    }
+  }
+
+  network_rule_collection {
+    name = "network-coll-01"
+    priority = 200
+    action = "Allow"
+    rule {
+      name = "Allow-Spoke1-Spoke2"
+      protocols = ["TCP", "UDP", "ICMP"]
+      source_addresses = ["10.1.1.0/24"]
+      destination_addresses = ["10.2.1.0/24"]
+      destination_ports = ["1-65535"]
+    }
+    rule {
+      name = "Allow-Spoke2-Spoke1"
+      protocols = ["TCP", "UDP", "ICMP"]
+      source_addresses = ["10.2.1.0/24"]
+      destination_addresses = ["10.1.1.0/24"]
+      destination_ports = ["1-65535"]
+    }
+    rule {
+      name = "Allow-Internet"
+      protocols = ["TCP", "UDP"]
+      source_addresses = ["10.2.1.0/24"]
+      destination_addresses = ["Internet"]
+      destination_ports = ["80", "443"]
+    }
+  }
+}

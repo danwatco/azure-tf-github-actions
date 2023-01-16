@@ -30,3 +30,8 @@ variable "vm_username" {
 variable "public_key" {
   description = "Access public key for VM ssh"
 }
+
+variable "public_ip" {
+  description = "Create public IP or not"
+  type = bool
+}
